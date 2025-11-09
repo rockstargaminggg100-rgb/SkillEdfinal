@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>SkillEd — React (Preact+HTM) PWA</title><link rel="manifest" href="/manifest.json"/><meta name="theme-color" content="#0f1724"/><link rel="icon" href="/icons/icon-192.png" sizes="192x192"><script src="https://cdn.tailwindcss.com"></script><style>:root{color-scheme:dark}body{background:#0b1221;color:#fff;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,sans-serif}.glass{background:rgba(255,255,255,0.03);backdrop-filter:blur(6px)}.glow-btn{background:linear-gradient(90deg,#06b6d4,#3b82f6);color:#000;padding:.6rem 1.1rem;border-radius:12px;font-weight:700;box-shadow:0 6px 20px rgba(59,130,246,0.25);transition:all .3s}.glow-anim{animation:glow 2s infinite}@keyframes glow{0%{box-shadow:0 0 6px rgba(6,182,212,0.2)}50%{box-shadow:0 0 18px rgba(59,130,246,0.35)}100%{box-shadow:0 0 6px rgba(6,182,212,0.2)}}#splash{position:fixed;inset:0;background:black;display:flex;align-items:center;justify-content:center;z-index:50;flex-direction:column}#splash.hidden{display:none}</style></head><body>
+<div id="splash"><img src="/icons/icon-192.png" width="120" height="120" style="border-radius:16px"/><h1 style="margin-top:12px">SkillEd</h1></div>
+<div id="app"></div>
+<script type="module">
+import { h, render } from 'https://unpkg.com/preact@10.18.0?module';
+import htm from 'https://unpkg.com/htm@3.1.1/dist/htm.module.js';
+const html = htm.bind(h);
+const hooks = await import('https://unpkg.com/preact@10.18.0/hooks/dist/hooks.module.js');
+const { useState, useEffect } = hooks;
+
+const courses = ["Basic Digital Literacy","Tailoring & Garment Skills","Solar Panel Installation","Coding Fundamentals (Python)","Mobile Repair & Troubleshooting"];
+
+function App(){
+  const [view, setView] = useState('home');
+  const [name, setName] = useState('');
+  const [selected, setSelected] = useState('');
+  const [entries, setEntries] = useState(()=> JSON.parse(localStorage.getItem('skilled_entries')||'[]'));
+
+  useEffect(()=>{ setTimeout(()=>{document.getElementById('splash').classList.add('hidden')},2000); },[]);
+
+  function submit(){ if(!name.trim()){ alert('Enter your name'); return;} if(!selected){ alert('Choose a course'); return;} const e={id:Date.now(),name:name.trim(),course:selected,time:new Date().toLocaleString()}; const arr=[e,...entries]; localStorage.setItem('skilled_entries', JSON.stringify(arr)); setEntries(arr); setName(''); alert('Submitted (saved locally)'); setView('home'); }
+
+  return html`<div class="max-w-md mx-auto p-6">
+    <header class="mb-4 text-center"><img src="/icons/icon-192.png" width="72" height="72" class="mx-auto mb-2" style="border-radius:12px"/><h1 class="text-2xl font-bold">SkillEd</h1><p class="text-sm text-gray-300 mt-2">“When you give people skills, you give them power — the power to change their lives.”</p></header>
+    ${view==='home' ? html`<main id="home"><div class="glass p-4 rounded-lg mb-4 text-center"><button class="glow-btn glow-anim" onClick=${()=>setView('form')}>Start Learning</button></div></main>` : ''}
+    ${view==='form' ? html`<section class="glass p-4 rounded-lg mb-4"><h2 class="font-semibold text-lg">Join a Course</h2><div class="mt-3 space-y-3"><label class="block text-xs text-gray-300">Enter Your Name</label><input value=${name} onInput=${e=>setName(e.target.value)} class="w-full p-2 rounded bg-transparent border border-gray-700 text-white"/><label class="block text-xs text-gray-300">Select Course</label><select class="w-full p-2 rounded bg-transparent border border-gray-700 text-white" onChange=${e=>setSelected(e.target.value)}><option value="">-- choose --</option>${courses.map(c=>html`<option value=${c}>${c}</option>`)}</select><div class="flex justify-end mt-3"><button class="glow-btn" onClick=${submit}>Submit</button></div></div></section>` : ''}
+    <section class="glass p-4 rounded-lg"><h3 class="text-sm font-semibold">Nearby Training Centers</h3><ul class="mt-2 text-sm text-gray-300"><li>Community Skill Lab — Riverside</li><li>Govt Training Center — Market Road</li><li>Mobile Training Van — Zone C (weekly)</li></ul></section>
+    <footer class="text-xs text-gray-500 mt-6 text-center">Admin: Ctrl+A to open (password: 123)</footer>
+  </div>`;
+}
+
+render(html`<${App} />`, document.getElementById('app'));
+</script>
+
+<div id="adminModal" class="fixed inset-0 hidden items-center justify-center bg-black/60 p-4"><div class="w-full max-w-sm bg-gray-900 p-4 rounded"><h3 class="font-semibold text-lg">Admin Panel</h3><div id="adminPwdView" class="mt-3"><p class="text-xs text-gray-400">Enter admin password to view requests.</p><input id="adminPwd" placeholder="Password" type="password" class="w-full p-2 rounded bg-transparent border border-gray-700 text-white mt-2" /><div class="flex justify-between mt-3"><button id="adminCancel" class="px-3 py-1 rounded border">Cancel</button><button id="adminUnlock" class="px-3 py-1 rounded bg-green-600">Unlock</button></div></div><div id="adminPanel" class="hidden mt-3"><div class="flex justify-between items-center"><h4 class="font-medium">Submitted Requests</h4><button id="clearBtn" class="px-2 py-1 text-xs rounded bg-red-600">Clear All</button></div><div id="adminList" class="mt-3 text-sm"></div></div></div></div>
+<script>
+document.addEventListener('keydown',(e)=>{ if(e.key==='a' && e.ctrlKey){ const m=document.getElementById('adminModal'); m.classList.remove('hidden'); m.classList.add('flex'); } });
+document.getElementById('adminCancel').addEventListener('click', ()=>{ document.getElementById('adminModal').classList.add('hidden'); });
+document.getElementById('adminUnlock').addEventListener('click', ()=>{ const val=document.getElementById('adminPwd').value.trim(); if(val==='123'){ document.getElementById('adminPwdView').style.display='none'; document.getElementById('adminPanel').classList.remove('hidden'); loadAdmin(); } else alert('Incorrect password'); });
+function loadAdmin(){ const data = JSON.parse(localStorage.getItem('skilled_entries')||'[]'); const adminList=document.getElementById('adminList'); adminList.innerHTML=''; if(data.length===0){ adminList.innerHTML='<div class="text-gray-400">No entries.</div>'; return; } data.forEach(d=>{ const el=document.createElement('div'); el.className='p-2 border border-gray-700 rounded bg-black/20'; el.innerHTML = '<div class="font-medium">'+d.name+'</div><div class="text-xs text-gray-400">'+d.course+' • '+d.time+'</div>'; adminList.appendChild(el); }); }
+document.getElementById('clearBtn').addEventListener('click', ()=>{ if(confirm('Clear all entries?')){ localStorage.removeItem('skilled_entries'); loadAdmin(); alert('Cleared'); } });
+setTimeout(()=>{document.getElementById('splash').classList.add('hidden')},2000);
+</script>
